@@ -8,157 +8,118 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
 
-# ===================== CONFIG GENERAL =====================
+# ===================== PAGE CONFIG =====================
 st.set_page_config(page_title="Blackjack ML – Play", page_icon="🃏", layout="wide")
 
-# ====== Tema claro + UI ======
+# ===================== THEME (LIGHT) & GLOBAL CSS =====================
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
 
-:root {
+:root{
   --bg: #f6f7fb;
   --panel: #ffffff;
-  --panel-2: #f0f2f7;
-  --border: rgba(24, 32, 60, 0.12);
-  --text: #1f2430;
-  --muted: #5b6682;
-  --primary: #5b6cff; /* violeta azulado suave */
-  --primary-2: #00bcd4; /* celeste */
-  --win: #1fa27a;
-  --lose: #e04f56;
-  --push: #b8860b;
-  --felt1: #0d8b5b;      /* verde paño */
-  --felt2: #0b6d49;
+  --panel-2:#f1f3f9;
+  --border: rgba(31,36,48,.14);
+  --text:#1f2430;
+  --muted:#636e8b;
+  --primary:#5568ff;
+  --felt1:#0e8b5e;
+  --felt2:#0b6c48;
+  --wood:#b68458;
+  --win:#1fa27a;
+  --lose:#e04f56;
+  --push:#b8860b;
 }
 
-html, body, [class*="css"]  {
-  font-family: 'Poppins', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-}
-.block-container { padding-top: 0.8rem; }
+html, body, [class*="css"] { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-serif; }
+.block-container{ padding-top: 1.0rem; padding-bottom: 1.2rem; }
 
-h1,h2,h3 { letter-spacing: .2px; }
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 16px 16px;
-  box-shadow: 0 10px 30px rgba(17,28,51,0.06);
+h1.title{
+  margin: 0 0 .6rem 0; font-weight: 800; letter-spacing:.2px;
 }
 
-/* =================== Mesa =================== */
-.table-wrap {
-  display: flex; justify-content: center; width: 100%;
+.panel{
+  background: var(--panel); border:1px solid var(--border); border-radius:18px;
+  box-shadow: 0 12px 36px rgba(17,28,51,.08); padding: 14px 16px;
 }
-.table {
-  width: min(1000px, 96%);
-  min-height: 460px;
-  margin: 8px 0 14px;
-  background: radial-gradient(1200px 420px at 50% -20%, rgba(255,255,255,.24), transparent 60%),
+
+/* =================== Mesa centrada =================== */
+.stage-wrap{ width:100%; display:flex; justify-content:center; }
+.table{
+  width: min(980px, 96%); min-height: 520px;
+  background: radial-gradient(1200px 420px at 50% -20%, rgba(255,255,255,.25), transparent 60%),
               linear-gradient(180deg, var(--felt1) 0%, var(--felt2) 100%);
-  border-radius: 24px;
-  border: 6px solid #b48658;            /* borde madera */
-  box-shadow: 0 18px 60px rgba(0,0,0,.12), inset 0 0 120px rgba(0,0,0,.15);
-  position: relative;
-  overflow: hidden;
-  padding: 22px 18px;
+  border-radius: 26px;
+  border: 7px solid var(--wood);
+  box-shadow: 0 18px 60px rgba(0,0,0,.14), inset 0 0 140px rgba(0,0,0,.16);
+  position: relative; overflow: hidden;
 }
-.table .title {
-  position: absolute; left: 50%; transform: translateX(-50%);
-  top: 10px; color: #fff; opacity: .9; font-weight: 700; letter-spacing:.4px;
+.table .banner{
+  position:absolute; top:10px; left:50%; transform:translateX(-50%);
+  color:#ffffff; font-weight:800; opacity:.9; letter-spacing:.4px;
 }
-.hands {
-  position: absolute; inset: 56px 22px 22px 22px;
-  display: grid;
-  grid-template-rows: 1fr 4px 1fr;
-  align-items: center;
+.hands{
+  position:absolute; inset:64px 24px 24px 24px;
+  display:grid; grid-template-rows: 1fr 6px 1fr; align-items:center;
 }
-.divider {
-  height: 4px; width: 100%;
-  background: linear-gradient(90deg, rgba(255,255,255,.18), rgba(255,255,255,.35), rgba(255,255,255,.18));
-  border-radius: 999px;
-  opacity: .65;
+.divider{
+  height:6px; width:100%; border-radius:999px;
+  background: linear-gradient(90deg, rgba(255,255,255,.25), rgba(255,255,255,.55), rgba(255,255,255,.25));
+  opacity:.75;
 }
-.hand-row {
-  display: flex;
-  height: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
+.hand-row{ display:flex; align-items:center; justify-content:center; gap:14px; height:100%; }
+.hand-label{
+  position:absolute; left:16px; top:8px; padding:7px 12px; border-radius:999px;
+  background: rgba(255,255,255,.18); color:#fff; font-weight:800; font-size:12px; backdrop-filter: blur(2px);
 }
-.hand-label {
-  position: absolute; left: 18px; top: 8px;
-  background: rgba(255,255,255,.18);
-  color: #fff; font-weight: 700;
-  padding: 6px 10px; border-radius: 999px; font-size: 12px;
-  backdrop-filter: blur(2px);
-}
-.hand-row.player .hand-label { top: auto; bottom: 8px; }
+.hand-row.player .hand-label{ top:auto; bottom:8px; }
 
 /* =================== Cartas =================== */
-.card {
-  width: 76px; height: 104px; border-radius: 12px;
-  background: linear-gradient(180deg, #fff 0%, #f3f3f3 100%);
-  border: 1px solid rgba(0,0,0,.12);
-  box-shadow: 0 10px 26px rgba(0,0,0,.18);
-  position: relative; display: grid; place-items: center;
+.card{
+  width: 82px; height: 114px; border-radius: 12px;
+  background: linear-gradient(180deg,#fff 0%,#f3f3f3 100%);
+  border:1px solid rgba(0,0,0,.12);
+  box-shadow: 0 12px 30px rgba(0,0,0,.18);
+  position:relative; display:grid; place-items:center;
 }
-.card .rank { font-size: 22px; font-weight: 800; }
-.card .suit { font-size: 18px; }
-.card.red { color: #cc2336; }
-.card.black { color: #141821; }
-.card .corner {
-  position: absolute; top: 6px; left: 6px;
-  text-align: left; line-height: 1.0; font-size: 12px; font-weight: 800;
-}
-.card .s { font-size: 12px; }
-.card.back {
-  background: repeating-linear-gradient(
-      45deg, #5b6cff 0, #5b6cff 6px, #4758e0 6px, #4758e0 12px
-  );
+.card .rank{ font-size: 24px; font-weight: 800; }
+.card .suit{ font-size: 18px; }
+.card.red{ color:#cc2336; } .card.black{ color:#161b24; }
+.card .corner{ position:absolute; top:7px; left:7px; line-height:1.0; font-size:12px; font-weight:800; }
+.card .s{ font-size:12px; }
+.card.back{
+  background: repeating-linear-gradient(45deg, #5568ff 0, #5568ff 6px, #4658e0 6px, #4658e0 12px);
   border-color: rgba(0,0,0,.18);
 }
 
 /* =================== Controles =================== */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 8px; font-weight: 800; font-size: 14px;
-  padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border);
-  background: var(--panel);
-  box-shadow: 0 6px 18px rgba(17,28,51,0.06);
+.controls{ width:min(980px,96%); margin: 10px auto 0; }
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  font-weight:800; font-size:14px; padding:10px 14px; border-radius:12px; border:1px solid var(--border);
+  background: var(--panel); box-shadow: 0 8px 22px rgba(17,28,51,.06); color: var(--text);
 }
-.btn:hover { border-color: rgba(91,108,255,.55); }
-.btn.primary {
-  background: linear-gradient(180deg, #6b7cff, #5568ff);
-  color: #fff; border-color: transparent;
-}
-.btn.warn { background: #ffe7e9; color: #b03542; border-color: #ffc7cc; }
-.btn.alt { background: #e6faff; color: #0d5b65; border-color: #b3f1fb; }
+.btn:hover{ border-color: rgba(85,104,255,.55); }
+.btn.primary{ background: linear-gradient(180deg,#6b7cff,#5568ff); color:#fff; border-color:transparent; }
+.btn.warn{ background:#ffe7e9; color:#b03542; border-color:#ffc7cc; }
+.btn.alt{ background:#e6faff; color:#0d5b65; border-color:#b3f1fb; }
 
-.stat {
-  background: var(--panel-2);
-  border: 1px dashed var(--border);
-  border-radius: 12px; padding: 10px 12px;
-  color: var(--text);
+.rec-chip{
+  display:inline-flex; gap:8px; align-items:center;
+  background:#eef0ff; border:1px solid #cad0ff; color:#3842a8;
+  padding:8px 12px; border-radius:999px; font-weight:800;
 }
-.stat b { font-size: 20px; }
-.rec-chip {
-  background: #eef0ff;
-  border: 1px solid #cad0ff;
-  color: #3842a8;
-  padding: 8px 12px; border-radius: 999px; font-weight: 800;
-  display: inline-flex; gap: 8px; align-items: center;
-}
-.result-win { color: var(--win); font-weight: 800; }
-.result-lose { color: var(--lose); font-weight: 800; }
-.result-push { color: var(--push); font-weight: 800; }
+.stat{ background:var(--panel-2); border:1px dashed var(--border); border-radius:12px; padding:10px 12px; }
+.stat b{ font-size:20px; }
+
+.result-win{ color:var(--win); font-weight:800; }
+.result-lose{ color:var(--lose); font-weight:800; }
+.result-push{ color:var(--push); font-weight:800; }
 </style>
 """, unsafe_allow_html=True)
 
-# ===================== Utilidades modelo =====================
+# ===================== MODEL HELPERS =====================
 def _find_column_transformer(pipe: Pipeline) -> ColumnTransformer | None:
     if isinstance(pipe, ColumnTransformer): return pipe
     if hasattr(pipe, "named_steps"):
@@ -172,7 +133,7 @@ def _find_column_transformer(pipe: Pipeline) -> ColumnTransformer | None:
 def expected_columns_from_ct(ct: ColumnTransformer) -> list[str]:
     cols = []
     for _, _, cols_spec in getattr(ct, "transformers_", []):
-        if cols_spec == "drop" or cols_spec is None: continue
+        if cols_spec in ("drop", None): continue
         if isinstance(cols_spec, (list, tuple)):
             cols.extend([c for c in cols_spec if isinstance(c, str)])
     seen, out = set(), []
@@ -234,35 +195,30 @@ model, expected_cols = load_model()
 
 def recommend_action(player_cards, dealer_cards, step=1, extra_cols=None):
     row = {
-        "player_cards": player_cards,
-        "dealer_cards": dealer_cards,
-        "step": step,
-        "game_id": 1, "round_id": 1, "hand_number": 1,
-        "bet_mode": "flat", "strategy_used": "unknown",
+        "player_cards": player_cards, "dealer_cards": dealer_cards, "step": step,
+        "game_id": 1, "round_id": 1, "hand_number": 1, "bet_mode": "flat", "strategy_used": "unknown",
     }
     if extra_cols: row.update(extra_cols)
     X = pd.DataFrame([row])
     if expected_cols: X = ensure_expected_columns(X, expected_cols)
     return model.predict(X)[0]
 
-# ===================== Motor de juego =====================
+# ===================== GAME ENGINE =====================
 RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"]
 SUITS = ["♠","♥","♦","♣"]
 
 def new_shoe(num_decks=4):
-    shoe = [(r, s) for _ in range(num_decks) for r in RANKS for s in SUITS]
+    shoe = [(r,s) for _ in range(num_decks) for r in RANKS for s in SUITS]
     random.shuffle(shoe); return shoe
 
 def total(cards):
-    vals = []
-    aces = 0
-    for r, _ in cards:
+    vals, aces = [], 0
+    for r,_ in cards:
         if r in ["J","Q","K"]: vals.append(10)
         elif r == "A": vals.append(11); aces += 1
         else: vals.append(int(r))
     s = sum(vals)
-    while s > 21 and aces > 0:
-        s -= 10; aces -= 1
+    while s > 21 and aces > 0: s -= 10; aces -= 1
     return s
 
 def cards_to_rank_csv(cards): return ", ".join([r for r,_ in cards])
@@ -271,29 +227,27 @@ def card_html(rank, suit, back=False):
     if back:
         return '<div class="card back"></div>'
     is_red = suit in ["♥","♦"]
-    return f"""
-      <div class="card {'red' if is_red else 'black'}">
+    return f'''
+      <div class="card {"red" if is_red else "black"}'>
         <div class="corner">{rank}<div class="s">{suit}</div></div>
         <div class="rank">{rank}</div>
         <div class="suit">{suit}</div>
       </div>
-    """
+    '''
 
 def render_table(dealer_cards, player_cards, reveal_dealer=False):
-    st.markdown('<div class="table-wrap"><div class="table">', unsafe_allow_html=True)
-    st.markdown('<div class="title">BLACKJACK</div>', unsafe_allow_html=True)
+    st.markdown('<div class="stage-wrap"><div class="table">', unsafe_allow_html=True)
+    st.markdown('<div class="banner">BLACKJACK</div>', unsafe_allow_html=True)
     st.markdown('<div class="hands">', unsafe_allow_html=True)
 
-    # Dealer row
+    # Dealer (fila superior)
     st.markdown('<div class="hand-row dealer" style="position:relative;">', unsafe_allow_html=True)
-    lab = f"Crupier • Total: {total(dealer_cards) if reveal_dealer and dealer_cards else '??'}"
-    st.markdown(f'<div class="hand-label">{lab}</div>', unsafe_allow_html=True)
-
+    label = f'Crupier • Total: {total(dealer_cards) if (reveal_dealer and dealer_cards) else "??"}'
+    st.markdown(f'<div class="hand-label">{label}</div>', unsafe_allow_html=True)
     if not reveal_dealer and len(dealer_cards) >= 2:
-        # primera boca arriba, segunda boca abajo
         r0,s0 = dealer_cards[0]
         st.markdown(card_html(r0,s0), unsafe_allow_html=True)
-        st.markdown(card_html("","", back=True), unsafe_allow_html=True)
+        st.markdown(card_html("", "", back=True), unsafe_allow_html=True)
         for r,s in dealer_cards[2:]:
             st.markdown(card_html(r,s), unsafe_allow_html=True)
     else:
@@ -304,24 +258,18 @@ def render_table(dealer_cards, player_cards, reveal_dealer=False):
     # Divider
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
-    # Player row
+    # Player (fila inferior)
     st.markdown('<div class="hand-row player" style="position:relative;">', unsafe_allow_html=True)
-    plab = f"Jugador • Total: {total(player_cards) if player_cards else 0}"
-    st.markdown(f'<div class="hand-label">{plab}</div>', unsafe_allow_html=True)
+    plabel = f'Jugador • Total: {total(player_cards) if player_cards else 0}'
+    st.markdown(f'<div class="hand-label">{plabel}</div>', unsafe_allow_html=True)
     for r,s in player_cards:
         st.markdown(card_html(r,s), unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div></div></div>', unsafe_allow_html=True)
 
-# ===================== Sidebar (opciones breves) =====================
-with st.sidebar:
-    st.markdown("<div class='panel'><h3>🃏 Blackjack ML</h3><p style='color:var(--muted)'>Probá una mano y pedile consejo al modelo entrenado.</p></div>", unsafe_allow_html=True)
-    num_decks = st.selectbox("N° de mazos", [1,2,4,6,8], index=2)
-    st.caption("Podés **deshacer** el último paso para probar otra acción.")
-
-# ===================== Estado =====================
-if "shoe" not in st.session_state: st.session_state.shoe = new_shoe(num_decks)
+# ===================== STATE =====================
+if "shoe" not in st.session_state: st.session_state.shoe = new_shoe(4)
 if "player_hand" not in st.session_state: st.session_state.player_hand = []
 if "dealer_hand" not in st.session_state: st.session_state.dealer_hand = []
 if "step" not in st.session_state: st.session_state.step = 1
@@ -340,7 +288,6 @@ def push_state():
         last_rec=st.session_state.last_rec,
         result=st.session_state.result,
     ))
-
 def pop_state():
     if not st.session_state.history: return
     s = st.session_state.history.pop()
@@ -352,110 +299,99 @@ def pop_state():
     st.session_state.last_rec = s["last_rec"]
     st.session_state.result = s["result"]
 
-# ===================== Layout principal =====================
-left, right = st.columns([4, 2], gap="large")
+# ===================== UI =====================
+st.markdown('<h1 class="title">🃏 Blackjack ML</h1>', unsafe_allow_html=True)
 
-with left:
-    render_table(
-        st.session_state.dealer_hand,
-        st.session_state.player_hand,
-        reveal_dealer=st.session_state.round_over
-    )
+# --- Mesa centrada ---
+render_table(
+    st.session_state.dealer_hand,
+    st.session_state.player_hand,
+    reveal_dealer=st.session_state.round_over
+)
 
-with right:
-    st.markdown("<div class='panel'>", unsafe_allow_html=True)
-    # CONTROLES SUPERIORES
-    c1, c2 = st.columns([1,1])
-    if st.session_state.round_over:
-        if c1.button("🂠 Repartir", use_container_width=True, type="primary"):
-            st.session_state.history.clear()
-            st.session_state.result = None
-            st.session_state.shoe = new_shoe(num_decks)
-            st.session_state.player_hand = []
-            st.session_state.dealer_hand = []
-            st.session_state.step = 1
-            st.session_state.round_over = False
+# --- Controles centrados ---
+st.markdown('<div class="controls panel">', unsafe_allow_html=True)
 
-            push_state()
-            st.session_state.player_hand.append(st.session_state.shoe.pop())
-            st.session_state.dealer_hand.append(st.session_state.shoe.pop())
-            st.session_state.player_hand.append(st.session_state.shoe.pop())
-            st.session_state.dealer_hand.append(st.session_state.shoe.pop())
-        if c2.button("🔄 Nueva mano", use_container_width=True):
-            st.session_state.history.clear()
-            st.session_state.result = None
-            st.session_state.shoe = new_shoe(num_decks)
-            st.session_state.player_hand = []
-            st.session_state.dealer_hand = []
-            st.session_state.step = 1
-            st.session_state.round_over = True
-            st.session_state.last_rec = None
-    else:
-        if c1.button("🤖 Recomendar acción", use_container_width=True):
-            player_csv = cards_to_rank_csv(st.session_state.player_hand)
-            dealer_csv = cards_to_rank_csv(st.session_state.dealer_hand)
-            rec = recommend_action(player_csv, dealer_csv, step=st.session_state.step)
-            st.session_state.last_rec = rec
-            st.toast(f"Modelo sugiere: {rec.upper()}")
-        if c2.button("↩️ Deshacer último paso", use_container_width=True):
-            pop_state()
+cols_top = st.columns([1,1,1,1,1], gap="medium")
+if st.session_state.round_over:
+    if cols_top[0].button("🂠 Repartir", use_container_width=True):
+        st.session_state.history.clear(); st.session_state.result = None
+        st.session_state.shoe = new_shoe(4)
+        st.session_state.player_hand = []; st.session_state.dealer_hand = []
+        st.session_state.step = 1; st.session_state.round_over = False
+        push_state()
+        st.session_state.player_hand.append(st.session_state.shoe.pop())
+        st.session_state.dealer_hand.append(st.session_state.shoe.pop())
+        st.session_state.player_hand.append(st.session_state.shoe.pop())
+        st.session_state.dealer_hand.append(st.session_state.shoe.pop())
+    if cols_top[1].button("🔄 Nueva mano", use_container_width=True):
+        st.session_state.history.clear(); st.session_state.result = None
+        st.session_state.shoe = new_shoe(4)
+        st.session_state.player_hand = []; st.session_state.dealer_hand = []
+        st.session_state.step = 1; st.session_state.round_over = True
+        st.session_state.last_rec = None
+else:
+    if cols_top[0].button("🤖 Recomendar", use_container_width=True):
+        player_csv = cards_to_rank_csv(st.session_state.player_hand)
+        dealer_csv = cards_to_rank_csv(st.session_state.dealer_hand)
+        rec = recommend_action(player_csv, dealer_csv, step=st.session_state.step)
+        st.session_state.last_rec = rec
+        st.toast(f"Modelo sugiere: {rec.upper()}")
+    if cols_top[1].button("↩️ Deshacer", use_container_width=True):
+        pop_state()
 
-        if st.session_state.last_rec:
-            st.markdown(f"<div class='rec-chip'>Sugerencia: <b>{st.session_state.last_rec.upper()}</b></div>", unsafe_allow_html=True)
+    if st.session_state.last_rec:
+        st.markdown(f'<div class="rec-chip">Sugerencia: <b>{st.session_state.last_rec.upper()}</b></div>', unsafe_allow_html=True)
 
-        st.write("")
-        st.markdown("**Acciones**")
-        a1, a2 = st.columns(2)
-        a3, a4 = st.columns(2)
+    st.write("")
+    cols_actions = st.columns(4, gap="medium")
 
-        def do_hit():
-            push_state()
-            st.session_state.player_hand.append(st.session_state.shoe.pop())
-            st.session_state.step += 1
-            if total(st.session_state.player_hand) > 21:
-                st.session_state.result = ("lose", "¡Te pasaste! Pierdes la mano.")
-                st.session_state.round_over = True
-
-        def do_stand():
-            push_state()
-            while total(st.session_state.dealer_hand) < 17 and len(st.session_state.shoe) > 0:
-                st.session_state.dealer_hand.append(st.session_state.shoe.pop())
-            p, d = total(st.session_state.player_hand), total(st.session_state.dealer_hand)
-            if d > 21 or p > d: st.session_state.result = ("win", "¡Ganaste!")
-            elif p < d:        st.session_state.result = ("lose", "Perdiste 😢")
-            else:              st.session_state.result = ("push", "Empate (push).")
+    def do_hit():
+        push_state()
+        st.session_state.player_hand.append(st.session_state.shoe.pop())
+        st.session_state.step += 1
+        if total(st.session_state.player_hand) > 21:
+            st.session_state.result = ("lose","¡Te pasaste! Pierdes la mano.")
             st.session_state.round_over = True
 
-        def do_double():
-            push_state()
-            st.session_state.player_hand.append(st.session_state.shoe.pop())
-            st.session_state.step += 1
-            if total(st.session_state.player_hand) > 21:
-                st.session_state.result = ("lose", "¡Te pasaste con el Doble! Pierdes la mano.")
-                st.session_state.round_over = True
-            else:
-                do_stand()
+    def do_stand():
+        push_state()
+        while total(st.session_state.dealer_hand) < 17 and len(st.session_state.shoe) > 0:
+            st.session_state.dealer_hand.append(st.session_state.shoe.pop())
+        p, d = total(st.session_state.player_hand), total(st.session_state.dealer_hand)
+        if d > 21 or p > d: st.session_state.result=("win","¡Ganaste!")
+        elif p < d:         st.session_state.result=("lose","Perdiste 😢")
+        else:               st.session_state.result=("push","Empate (push).")
+        st.session_state.round_over = True
 
-        def do_split():
-            st.info("Split no implementado en esta demo.")
+    def do_double():
+        push_state()
+        st.session_state.player_hand.append(st.session_state.shoe.pop())
+        st.session_state.step += 1
+        if total(st.session_state.player_hand) > 21:
+            st.session_state.result=("lose","¡Te pasaste con el Doble! Pierdes la mano.")
+            st.session_state.round_over = True
+        else:
+            do_stand()
 
-        a1.button("🖐️ HIT", use_container_width=True, on_click=do_hit)
-        a2.button("✋ STAND", use_container_width=True, on_click=do_stand)
-        a3.button("🟰 DOUBLE", use_container_width=True, on_click=do_double)
-        a4.button("🔀 SPLIT", use_container_width=True, on_click=do_split)
+    def do_split():
+        st.info("Split no implementado en esta demo.")
 
-        st.write("")
-        st.markdown("**Estado**")
-        s1, s2, s3 = st.columns(3)
-        s1.markdown(f"<div class='stat'>Paso<br><b>{st.session_state.step}</b></div>", unsafe_allow_html=True)
-        s2.markdown(f"<div class='stat'>Total Jugador<br><b>{total(st.session_state.player_hand) if st.session_state.player_hand else 0}</b></div>", unsafe_allow_html=True)
-        vis = st.session_state.dealer_hand[0][0] if st.session_state.dealer_hand else "-"
-        s3.markdown(f"<div class='stat'>Dealer visible<br><b>{vis}</b></div>", unsafe_allow_html=True)
+    cols_actions[0].button("🖐️ HIT",   use_container_width=True, on_click=do_hit)
+    cols_actions[1].button("✋ STAND",  use_container_width=True, on_click=do_stand)
+    cols_actions[2].button("🟰 DOUBLE", use_container_width=True, on_click=do_double)
+    cols_actions[3].button("🔀 SPLIT",  use_container_width=True, on_click=do_split)
 
-    # resultado final
-    if st.session_state.round_over and st.session_state.result:
-        kind, msg = st.session_state.result
-        cls = "result-win" if kind=="win" else "result-lose" if kind=="lose" else "result-push"
-        st.markdown(f"<p class='{cls}' style='margin:.6rem 0 0'>{msg}</p>", unsafe_allow_html=True)
+st.write("")
+cols_state = st.columns(3, gap="large")
+cols_state[0].markdown(f'<div class="stat">Paso<br><b>{st.session_state.step}</b></div>', unsafe_allow_html=True)
+cols_state[1].markdown(f'<div class="stat">Total Jugador<br><b>{total(st.session_state.player_hand) if st.session_state.player_hand else 0}</b></div>', unsafe_allow_html=True)
+visible = st.session_state.dealer_hand[0][0] if st.session_state.dealer_hand else "-"
+cols_state[2].markdown(f'<div class="stat">Dealer visible<br><b>{visible}</b></div>', unsafe_allow_html=True)
 
-    st.markdown("</div>", unsafe_allow_html=True)
+if st.session_state.round_over and st.session_state.result:
+    kind, msg = st.session_state.result
+    cls = "result-win" if kind=="win" else "result-lose" if kind=="lose" else "result-push"
+    st.markdown(f"<p class='{cls}' style='margin-top:.6rem'>{msg}</p>", unsafe_allow_html=True)
+
+st.markdown("</div>", unsafe_allow_html=True)  # close .controls
